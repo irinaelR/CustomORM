@@ -98,7 +98,7 @@ public class QueryManager {
         return obj;
     }
 
-    public List<Object> find(Connection c, Class<?> objectClass, String[] conditions, Object[] args) throws Exception {
+    public List<Object> find(Connection c, Class<?> objectClass, String[] conditions, Object[] args, String[] afterWhere) throws Exception {
         List<Object> results = new ArrayList<>();
 
         boolean shouldClose = false;
@@ -109,8 +109,7 @@ public class QueryManager {
 
         ReflectUtil reflectUtil = new ReflectUtil(objectClass);
         Field[] fields = reflectUtil.getColumns(false);
-        String selectSql = reflectUtil.formSelectQuery(fields);
-        selectSql = reflectUtil.appendConditions(selectSql, conditions);
+        String selectSql = reflectUtil.formSelectQuery(fields, conditions, afterWhere);
 
         PreparedStatement pst = null;
         ResultSet rs = null;

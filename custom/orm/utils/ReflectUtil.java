@@ -153,6 +153,21 @@ public class ReflectUtil {
                 baseSql += " AND " + condition;
             }
         }
+        
+        return baseSql;
+    }
+
+    public String formSelectQuery(Field[] fields, String[] conditions, String[] afterWhere) throws Exception {
+        String baseSql = this.formSelectQuery(fields);
+        if (conditions != null) {
+            baseSql = this.appendConditions(baseSql, conditions);
+        } 
+
+        if (afterWhere != null && afterWhere.length > 0) {
+            for (String other : afterWhere) {
+                baseSql += " " + other;
+            }
+        }
 
         return baseSql;
     }

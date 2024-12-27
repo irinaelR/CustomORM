@@ -18,10 +18,13 @@ public class ORMMAin {
             "name LIKE ?"
         };
         Object[] values = new String[] {
-            "%Company%"
+            "%p%"
+        };
+        String[] afterWhere = new String[] {
+            "ORDER BY id DESC"
         };
         try {
-            List<Object> all = qm.find(null, labType.getClass(), condition, values);
+            List<Object> all = qm.find(null, labType.getClass(), condition, values, afterWhere);
             for (Object object : all) {
                 ExampleEntity lt = (ExampleEntity) object;
                 System.out.println(lt.toString());
