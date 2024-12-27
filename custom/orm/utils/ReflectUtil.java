@@ -104,7 +104,7 @@ public class ReflectUtil {
         return sql;
     }
 
-    public static String getGetSetName(Field f, String method) {
+    public static String getAccessMethodName(Field f, String method) {
         String name = f.getName();
         String capitalizedName = name.substring(0, 1).toUpperCase() + name.substring(1);
 
@@ -127,6 +127,34 @@ public class ReflectUtil {
         }
 
         return getColumnName(idField);
+    }
+
+    public String formSelectQuery(Field[] fields) throws Exception {
+        String sql = "SELECT ";
+
+        if (fields == null) {
+            fields = getColumns(false);
+        }
+
+        String lineup = getColumnLineup(getColumnNames(fields));
+
+        sql += lineup + " FROM " + getTableName() + " WHERE 1=1";
+
+        return sql;
+    }
+
+    public String appendConditions(String baseSql, String... conditions) throws Exception {
+        if (baseSql == null) {
+            baseSql = formSelectQuery(null);
+        }
+
+        if (conditions != null && conditions.length > 0) {
+            for (String condition : conditions) {
+                baseSql += " AND " + condition;
+            }
+        }
+
+        return baseSql;
     }
 
 }
