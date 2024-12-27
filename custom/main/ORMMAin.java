@@ -24,7 +24,7 @@ public class ORMMAin {
             "ORDER BY id DESC"
         };
         try {
-            List<Object> all = qm.find(null, labType.getClass(), condition, values, afterWhere);
+            List<Object> all = qm.find(null, labType.getClass(), null, null, null, 0, 3);
             for (Object object : all) {
                 ExampleEntity lt = (ExampleEntity) object;
                 System.out.println(lt.toString());

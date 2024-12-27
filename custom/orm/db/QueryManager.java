@@ -6,6 +6,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import custom.orm.db.utils.DBConnector;
@@ -147,5 +148,17 @@ public class QueryManager {
         }
 
         return results;
+    }
+
+    public List<Object> find(Connection c, Class<?> objectClass, String[] conditions, Object[] args, String[] afterWhere, int start, int limit) throws Exception {
+        String[] newAfterWhere = null;
+        if (afterWhere != null) {
+            newAfterWhere = Arrays.copyOf(afterWhere, afterWhere.length + 1);
+        } else {
+            newAfterWhere = new String[1];
+        }
+        newAfterWhere[newAfterWhere.length - 1] = "LIMIT " + limit + " OFFSET " + start;
+
+        return find(c, objectClass, conditions, args, newAfterWhere);
     }
 }
