@@ -164,21 +164,22 @@ public class QueryManager {
 
     public Object findById(Connection c, Object objToPopulate) throws Exception {
         ReflectUtil reflectUtil = new ReflectUtil(objToPopulate.getClass());
-        Field idField = reflectUtil.getIdCol();
-        String idColName = reflectUtil.getIdColName(idField);
 
+        Field idField = reflectUtil.getIdCol();
         if(idField == null) {
-            throw new IllegalArgumentException("Object to populate must have a field annotated as Id");
+            throw new IllegalArgumentException("Object in parameters must have a field annotated as Id");
         }
 
-        String idGetterName = ReflectUtil.getAccessMethodName(idField, AccessMethods.GET.getValue());
+        String idColName = reflectUtil.getIdColName(idField);
+        
         try {
+            String idGetterName = ReflectUtil.getAccessMethodName(idField, AccessMethods.GET.getValue());
             Method idGetter = objToPopulate.getClass().getDeclaredMethod(idGetterName, null);
     
             Object idValue = idGetter.invoke(objToPopulate, null);
             
             if (idValue == null) {
-                throw new Exception("The id of the object to populate must be set before calling findById");
+                throw new Exception("The id of the object in parameters must be set before calling findById");
             }
 
             String[] conditions = new String[] { idColName + " = ?" };
@@ -188,12 +189,11 @@ public class QueryManager {
             if (asList.size() == 0) {
                 return null;
             } else {
-                objToPopulate = asList.get(0);
+                return asList.get(0);
             }
         } catch (NoSuchMethodException nsme) {
             throw new Exception("Every mapped field of the entity must have declared getter and setter methods");
         }
 
-        return objToPopulate;
     }
 }
