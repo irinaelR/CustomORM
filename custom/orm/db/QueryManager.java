@@ -66,18 +66,20 @@ public class QueryManager {
 
         PreparedStatement pst = null;
         ResultSet generatedKeys = null;
-
-        this.setStatementValues(pst, obj, fields);
-
+        
         try {
             pst = c.prepareStatement(sql, new String[] { reflectUtil.getIdColName(idField) });
+            this.setStatementValues(pst, obj, fields);
             int affectedRows = pst.executeUpdate();
+            
             if (affectedRows > 0) {
+                c.commit();
+
                 generatedKeys = pst.getGeneratedKeys();
                 if (generatedKeys.next()) {
                     Object generatedId = generatedKeys.getObject(1);
                     String setter = ReflectUtil.getAccessMethodName(idField, AccessMethods.SET.getValue());
-    
+
                     Method m = obj.getClass().getDeclaredMethod(setter, idField.getType());
                     m.invoke(obj, generatedId);
                 }
@@ -99,7 +101,8 @@ public class QueryManager {
         return obj;
     }
 
-    public List<Object> find(Connection c, Class<?> objectClass, String[] conditions, Object[] args, String[] afterWhere) throws Exception {
+    public List<Object> find(Connection c, Class<?> objectClass, String[] conditions, Object[] args,
+            String[] afterWhere) throws Exception {
         List<Object> results = new ArrayList<>();
 
         boolean shouldClose = false;
@@ -150,7 +153,8 @@ public class QueryManager {
         return results;
     }
 
-    public List<Object> find(Connection c, Class<?> objectClass, String[] conditions, Object[] args, String[] afterWhere, int start, int limit) throws Exception {
+    public List<Object> find(Connection c, Class<?> objectClass, String[] conditions, Object[] args,
+            String[] afterWhere, int start, int limit) throws Exception {
         String[] newAfterWhere = null;
         if (afterWhere != null) {
             newAfterWhere = Arrays.copyOf(afterWhere, afterWhere.length + 1);
@@ -166,33 +170,74 @@ public class QueryManager {
         ReflectUtil reflectUtil = new ReflectUtil(objToPopulate.getClass());
 
         Field idField = reflectUtil.getIdCol();
-        if(idField == null) {
+        if (idField == null) {
             throw new IllegalArgumentException("Object in parameters must have a field annotated as Id");
         }
 
         String idColName = reflectUtil.getIdColName(idField);
-        
+
+        Object idValue = reflectUtil.getIdValue(objToPopulate);
+
+        if (idValue == null) {
+            throw new Exception("The id of the object in parameters must be set before calling findById");
+        }
+
+        String[] conditions = new String[] { idColName + " = ?" };
+        Object[] args = new Object[] { idValue };
+
+        List<Object> asList = find(c, objToPopulate.getClass(), conditions, args, null, 0, 1);
+        if (asList.size() == 0) {
+            return null;
+        } else {
+            return asList.get(0);
+        }
+    }
+
+    public int update(Connection c, Object newVersion) throws Exception {
+        ReflectUtil ru = new ReflectUtil(newVersion.getClass());
+        String sql = ru.formUpdateQuery();
+
+        List<Object> argsList = new ArrayList<>();
+
+        Field[] allFields = ru.getColumns(false);
+        for (Field field : allFields) {
+            String getterName = ReflectUtil.getAccessMethodName(field, AccessMethods.GET.getValue());
+            Method getter = newVersion.getClass().getDeclaredMethod(getterName, null);
+            Object o = getter.invoke(newVersion, null);
+
+            argsList.add(o);
+        }
+
+        Object idValue = ru.getIdValue(newVersion);
+        argsList.add(idValue); // last value to be set in the preparedStatement
+
+        Object[] args = argsList.toArray();
+
+        boolean shouldClose = false;
+        if (c == null) {
+            shouldClose = true;
+            c = new DBConnector(DBConnector.PROPERTIES_PATH).getConnection();
+        }
+
+        PreparedStatement pst = null;
+
         try {
-            String idGetterName = ReflectUtil.getAccessMethodName(idField, AccessMethods.GET.getValue());
-            Method idGetter = objToPopulate.getClass().getDeclaredMethod(idGetterName, null);
-    
-            Object idValue = idGetter.invoke(objToPopulate, null);
-            
-            if (idValue == null) {
-                throw new Exception("The id of the object in parameters must be set before calling findById");
-            }
+            pst = c.prepareStatement(sql);
+            setStatementValues(pst, args);
 
-            String[] conditions = new String[] { idColName + " = ?" };
-            Object[] args = new Object[] { idValue };
+            int affectedRows = pst.executeUpdate();
 
-            List<Object> asList = find(c, objToPopulate.getClass(), conditions, args, null, 0, 1);
-            if (asList.size() == 0) {
-                return null;
-            } else {
-                return asList.get(0);
+            c.commit();
+            return affectedRows;
+        } catch (Exception e) {
+            throw new Exception("Error during update", e);
+        } finally {
+            if (pst != null) {
+                pst.close();
             }
-        } catch (NoSuchMethodException nsme) {
-            throw new Exception("Every mapped field of the entity must have declared getter and setter methods");
+            if (shouldClose && c != null) {
+                c.close();
+            }
         }
 
     }
