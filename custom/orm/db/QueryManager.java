@@ -239,6 +239,41 @@ public class QueryManager {
                 c.close();
             }
         }
+    }
+
+    public int delete(Connection c, Object objToDelete) throws Exception {
+        ReflectUtil ru = new ReflectUtil(objToDelete.getClass());
+        String sql = ru.formDeleteQuery();
+
+        boolean shouldClose = false;
+        if (c == null) {
+            shouldClose = true;
+            c = new DBConnector(DBConnector.PROPERTIES_PATH).getConnection();
+        }
+
+        Object idValue = ru.getIdValue(objToDelete);
+        Object[] args = new Object[] { idValue };
+
+        PreparedStatement pst = null;
+
+        try {
+            pst = c.prepareStatement(sql);
+            setStatementValues(pst, args);
+
+            int affectedRows = pst.executeUpdate();
+            c.commit();
+
+            return affectedRows;
+        } catch (Exception e) {
+            throw new Exception("Erorr during delete", e);
+        } finally {
+            if (pst != null) {
+                pst.close();
+            }
+            if (shouldClose && c != null) {
+                c.close();
+            }
+        }
 
     }
 }

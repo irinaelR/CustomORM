@@ -11,11 +11,10 @@ import custom.orm.utils.ReflectUtil;
 public class ORMMAin {
     public static void main(String[] args) {
         QueryManager qm = new QueryManager();
-        ExampleEntity labType = new ExampleEntity(1, "Homeopathy");
+        ExampleEntity labType = new ExampleEntity(6, "Homeopathy");
 
         try {
-            Object result = qm.insert(labType, null);
-            // System.out.println(affectedRows);
+            int result = qm.delete(null, labType);
         } catch (Exception e) {
             e.printStackTrace();
         }

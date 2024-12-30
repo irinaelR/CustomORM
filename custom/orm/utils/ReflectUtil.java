@@ -201,6 +201,20 @@ public class ReflectUtil {
 
     }
 
+    public String formDeleteQuery() throws Exception {
+        String table = getTableName();
+
+        try {
+            String idCol = getIdColName(null);
+            
+            String sql = "DELETE FROM " + table + " WHERE " + idCol + " = ?";
+            return sql;
+        } catch (NullPointerException npe) {
+            throw new Exception("Entity must have an annotated id field to perform update");
+        }
+
+    }
+
     public Object getIdValue(Object objToPopulate) throws Exception {
         ReflectUtil reflectUtil = new ReflectUtil(objToPopulate.getClass());
 
